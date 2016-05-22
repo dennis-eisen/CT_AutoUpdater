@@ -1,19 +1,25 @@
-<?php 
-
+<?php
 /**	ChurchTools - Auto Updater
  *	@copyright: Copyright (c) 2016, Dennis Eisen & Michael Lux
- *	@version: 22.05.2016, 11:08
+ *	@version: 22.05.2016, 12:46
  */
 
-header('Content-Type: text/plain; charset=utf-8');
-define('HASH', 'PUT IN YOUR OWN HASH HERE'); // Put in your own hash here
+//put in your own password hash here
+define('HASH', 'PUT IN YOUR OWN HASH HERE');
+//modify to correct seafile server URL here
+define('SEAFILE_DIR', '/d/xyz1234567/');
 
-echo '### ChurchTools - Auto Updater ###', "\n\n";
+//should be fine, except if JMR decides to change the location of the SeaFile server... ;)
+define('SEAFILE_URL', 'https://seafile.churchtools.de' . SEAFILE_DIR);
+
+header('Content-Type: text/plain; charset=utf-8');
 
 // Password protection via QUERY_STRING
 if (!password_verify($_SERVER['QUERY_STRING'], HASH)) {
 	exit('Try harder! ;)');
 }
+
+echo '### ChurchTools - Auto Updater ###', "\n\n";
 
 // Require 'constants.php' for current CurchTools version
 if (file_exists(__DIR__ . '/system/includes/constants.php')) {
@@ -41,13 +47,13 @@ try {
 }
 
 // Build download link
-function getDownloadURL($url = 'https://seafile.churchtools.de/d/2ff6acb81e/') {
-	$html = file_get_contents($url);
-	if (preg_match('#href="/d/2ff6acb81e/(files/\?p=/churchtools-(3\..+)\.zip)"#', $html, $matches)) {
+function getDownloadURL() {
+	$html = file_get_contents(SEAFILE_URL);
+	if (preg_match('#href="'. SEAFILE_DIR . '(files/\?p=/churchtools-(3\..+)\.zip)"#', $html, $matches)) {
 		if (defined('CT_VERSION') && $matches[2] === CT_VERSION) {
 			throw new Exception('ChurchTools is already up-to-date (' . $matches[2] . ')!');
 		}
-		return $url . $matches[1] . '&dl=1';
+		return SEAFILE_URL . $matches[1] . '&dl=1';
 	} else {
 		throw new Exception('No valid ChurchTools 3 download found in HTML!');
 	}

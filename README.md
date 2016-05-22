@@ -1,18 +1,13 @@
-Dies geht an alle, die ChurchTools selbst hosten...
+# ChurchTools AutoUpdater
 
-ALLGEMEIN
+Das hier geht an alle, die ChurchTools selbst hosten...
 
-Michael Lux (@milux) und Ich hatten keine Lust mehr ChurchTools ständig von Hand zu aktualisieren, deshalb haben wir einen "kleinen" Auto Updater für ChurchTools entwickelt. Die Benutzung unseres Updaters ist denkbar einfach.
+## Allgemein
 
-Folgendes PHP Skript (update.php) von GitHub im ROOT Verzeichnis eurer ChurchTools Installation ablegen und per Cronejob einmal am Tag (bei uns 4:00 Uhr) aufrufen: CT_AutoUpdater (GitHub)
+Michael Lux (@milux) und Ich hatten keine Lust mehr ChurchTools ständig von Hand per FTP zu aktualisieren, deshalb haben wir einen "kleinen" Auto Updater für ChurchTools entwickelt.
+Die Benutzung unseres Updaters ist denkbar einfach und sollte auch ohne Programmier-Kenntnisse nicht überfordern.
 
-Zur Absicherung des Skripts, wird ein Passwort als QUERY_STRING übergeben. Wenn Ihr die Datei also aufruft müsst Ihr das wie folgt tun: www.euredomain.de/upload.php?EUERPASSWORT
-
-INSTALLATION
-
-Vor dem erstmaligen Aufrufen der upload.php müsst Ihr einen Hash für euer gewähltes Passwort erstellen. Dafür könnt Ihr die createHash.php nutzen. Danach müsst Ihr den dort erstellten Hash in der upload.php unter define('HASH', 'PUT IN YOUR OWN HASH HERE'); eintragen. Ab dann ist das Skript einsatzbereit.
-
-FUNKTIONEN
+## Funktionen
 
 Folgender Funktionsumfang ist in unserem Skript momentan enthalten:
 
@@ -22,3 +17,17 @@ Folgender Funktionsumfang ist in unserem Skript momentan enthalten:
 + Löschen des Systemsordners
 + Entpacken der Zip Datei (Einspielen des Updates)
 + Bei Fragen, stehe ich euch gerne zur Verfügung!
+
+## Installation
+
+Vor dem erstmaligen Aufrufen der upload.php müsst Ihr einen Hash für euer gewähltes Passwort erstellen.
+Dafür zuerst durch den Aufruf von https://churchtools_domain.xyz/createHash.php?EUER_PASSWORT einen Passwort-Hash erzeugen!
+Danach müsst ihr den dort erstellten Hash in der upload.php bei define('HASH', 'PUT IN YOUR OWN HASH HERE'); eintragen.
+Wenn ihr jetzt noch bei define('SEAFILE_DIR', '/d/xyz1234567/'); den Pfad auf die Stelle anpasst, bei der ihr die ChruchTools-Updates herunter ladet, ist das Skript einsatzbereit!
+(Ihr bekommt bei Updates per E-Mail einen Link zu einer SeaFile-Seite, die i.d.R. so aussieht: https://seafile.churchtools.de/d/xyz1234567/, kopiert davon einfach den hinteren Teil!) 
+
+Nun das Update-Skript im Root-Verzeichnis der ChurchTools Installation (neben index.php, system, files, etc.) ablegen und per Cronejob einmal am Tag (z.B. bei uns 4:00 Uhr) so aufrufen:
+https://churchtools_domain.xyz/upload.php?EUER_PASSWORT
+
+Die meisten Hosting-Provider bieten Cronjobs für ihre Kunden an.
+Wenn ihr keine Cronjobs anlegen könnt, könnt ihr auch einen kostenlosen externen Dienst wie https://www.cron-job.org/ dafür verwenden.

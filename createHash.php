@@ -1,8 +1,6 @@
 <?php
+/**
+* Echos a bcrypt-encrypted password hash of the password passed in as query string
+*/
 
-print getHash('PUT IN YOUR OWN PASSWORD HERE');
-
-// Create hash for password_verify
-function getHash($password) {
-	if (isset($password)) return password_hash($password, PASSWORD_BCRYPT, array('cost' => 12));
-}
+echo password_hash($_SERVER['QUERY_STRING'], PASSWORD_BCRYPT, array('cost' => 12));

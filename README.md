@@ -11,12 +11,12 @@ Die Benutzung unseres Updaters ist denkbar einfach und sollte auch ohne Programm
 
 Folgender Funktionsumfang ist in unserem Skript momentan enthalten:
 
-+ Schutz des Skripts mit QUERY_STRING Passwort.
-+ Verifikation ob ein Update verfügbar ist.
-+ Laden der Zip Datei vom Seafile Server
-+ Löschen des Systemsordners
-+ Entpacken der Zip Datei (Einspielen des Updates)
-+ Bei Fragen, stehe ich euch gerne zur Verfügung!
++ Schutz des Skripts mit per Query-String übergebenem Passwort.
++ Verifikation, ob ein Update verfügbar ist.
++ Herunterladen der ZIP-Datei vom ChurchTools SeaFile Server
++ Entpacken der ZIP-Datei und Ersetzung der index.php und des system-Verzeichnisses (Einspielen des Updates)
+
+Bei Fragen stehen wir gerne zur Verfügung! :)
 
 ## Installation
 

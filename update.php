@@ -1,15 +1,15 @@
 <?php
 /**	ChurchTools - Auto Updater
  *	@copyright: Copyright (c) 2016, Dennis Eisen & Michael Lux
- *	@version: 22.05.2016, 12:46
+ *	@version: 22.05.2016, 14:29
  */
 
-//put in your own password hash here
+// Put in your own password hash here
 define('HASH', 'PUT IN YOUR OWN HASH HERE');
-//modify to correct seafile server URL here
+// Modify to correct seafile server URL here
 define('SEAFILE_DIR', '/d/xyz1234567/');
 
-//should be fine, except if JMR decides to change the location of the SeaFile server... ;)
+// Should be fine, except if JMR decides to change the location of the SeaFile server... ;)
 define('SEAFILE_URL', 'https://seafile.churchtools.de' . SEAFILE_DIR);
 
 header('Content-Type: text/plain; charset=utf-8');

@@ -2,7 +2,7 @@
 
 /**	ChurchTools - Auto Updater
  *	@copyright: Copyright (c) 2016, Dennis Eisen & Michael Lux
- *	@version: 22.05.2016, 02:10
+ *	@version: 22.05.2016, 11:08
  */
 
 header('Content-Type: text/plain; charset=utf-8');
@@ -75,9 +75,7 @@ function updateSystem($zipPath) {
 		}
 		
 		// Check if directory system exists, if yes, delete it
-		if (file_exists(__DIR__ . '/system') == true) {
-			delTree(__DIR__ . '/system');
-		}
+		if (file_exists(__DIR__ . '/system')) delTree(__DIR__ . '/system');
 		
 		rename(__DIR__ . '/churchtools/system', __DIR__ . '/system');
 		rename(__DIR__ . '/churchtools/index.php', __DIR__ . '/index.php');

@@ -21,13 +21,13 @@ Bei Fragen stehen wir gerne zur Verfügung! :)
 ## Installation
 
 Vor dem erstmaligen Aufrufen der upload.php müsst Ihr einen Hash für euer gewähltes Passwort erstellen.
-Dafür zuerst durch den Aufruf von https://churchtools_domain.xyz/createHash.php?EUER_PASSWORT einen Passwort-Hash erzeugen!
+Dafür zuerst durch den Aufruf von <https://churchtools_domain.xyz/createHash.php?EUER_PASSWORT> einen Passwort-Hash erzeugen!
 Danach müsst ihr den dort erstellten Hash in der upload.php bei define('HASH', 'PUT IN YOUR OWN HASH HERE'); eintragen.
 Wenn ihr jetzt noch bei define('SEAFILE_DIR', '/d/xyz1234567/'); den Pfad auf die Stelle anpasst, bei der ihr die ChruchTools-Updates herunter ladet, ist das Skript einsatzbereit!
 (Ihr bekommt bei Updates per E-Mail einen Link zu einer SeaFile-Seite, die i.d.R. so aussieht: https://seafile.churchtools.de/d/xyz1234567/, kopiert davon einfach den hinteren Teil!) 
 
 Nun das Update-Skript im Root-Verzeichnis der ChurchTools Installation (neben index.php, system, files, etc.) ablegen und per Cronejob einmal am Tag (z.B. bei uns 4:00 Uhr) so aufrufen:
-https://churchtools_domain.xyz/upload.php?EUER_PASSWORT
+<https://churchtools_domain.xyz/upload.php?EUER_PASSWORT>
 
 Die meisten Hosting-Provider bieten Cronjobs für ihre Kunden an.
 Wenn ihr keine Cronjobs anlegen könnt, könnt ihr auch einen kostenlosen externen Dienst wie https://www.cron-job.org/ dafür verwenden.

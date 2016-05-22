@@ -6,8 +6,7 @@
  */
 
 header('Content-Type: text/plain; charset=utf-8');
-// Put in your own hash here
-define('HASH', 'PUT IN YOUR OWN HASH HERE');
+define('HASH', 'PUT IN YOUR OWN HASH HERE'); // Put in your own hash here
 
 echo '### ChurchTools - Auto Updater ###', "\n\n";
 

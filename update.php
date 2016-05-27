@@ -1,7 +1,7 @@
 <?php
 /**	ChurchTools - Auto Updater
  *	@copyright: Copyright (c) 2016, Dennis Eisen & Michael Lux
- *	@version: 22.05.2016, 14:29
+ *	@version: 27.05.2016, 17:08
  */
 
 // Put in your own password hash here

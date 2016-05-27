@@ -48,7 +48,7 @@ function getDownloadURL($url = 'https://seafile.churchtools.de/d/2ff6acb81e/') {
 		// Parse SeaFile timestamp
 		$ts = DateTime::createFromFormat(DateTime::RFC2822, $matches[3])->getTimeStamp();
 		// If SeaFile archive is older than modification date of constants.php, don't perform update
-		if (file_exists(__DIR__ . '/system/includes/constants.php') && (filemtime(__DIR__ . '/system/includes/constants.php') > $ts)) {
+		if (file_exists(__DIR__ . '/system/includes/constants.php') && filemtime(__DIR__ . '/system/includes/constants.php') > $ts) {
 			throw new Exception('ChurchTools is already up-to-date (' . $matches[2] . ')!');
 		}
 		return $url . $matches[1] . '&dl=1';

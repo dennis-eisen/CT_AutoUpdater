@@ -21,11 +21,6 @@ if (!password_verify($_SERVER['QUERY_STRING'], HASH)) {
 
 echo '### ChurchTools - Auto Updater ###', "\n\n";
 
-// Require 'constants.php' for current CurchTools version
-if (file_exists(__DIR__ . '/system/includes/constants.php')) {
-	require __DIR__ . '/system/includes/constants.php';
-}
-
 // Keyword for cronejob e-mail notification. No e-mail will be sent if detected!
 register_shutdown_function(function () {
 	if (error_get_last() === null) {
@@ -47,13 +42,17 @@ try {
 }
 
 // Build download link
-function getDownloadURL() {
-	$html = file_get_contents(SEAFILE_URL);
-	if (preg_match('#href="'. SEAFILE_DIR . '(files/\?p=/churchtools-(3\..+)\.zip)"#', $html, $matches)) {
-		if (defined('CT_VERSION') && $matches[2] === CT_VERSION) {
+function getDownloadURL($url = 'https://seafile.churchtools.de/d/2ff6acb81e/') {
+	$html = file_get_contents($url);
+	if (preg_match('#href="/d/2ff6acb81e/(files/\?p=/churchtools-(3\..+?)\.zip)".*?<time[^<]+title="([^"]+?)"#s', $html, $matches)) {
+		// Parse SeaFile timestamp
+		$ts = DateTime::createFromFormat(DateTime::RFC2822, $matches[3])->getTimeStamp();
+		// If SeaFile archive is older than modification date of constants.php, don't perform update
+		if (filemtime(__DIR__ . '/system/includes/constants.php') > $ts) {
+			pushover('Update unnötig', "Die neueste Version ($matches[2]) von CT ist bereits installiert!", '-2');
 			throw new Exception('ChurchTools is already up-to-date (' . $matches[2] . ')!');
 		}
-		return SEAFILE_URL . $matches[1] . '&dl=1';
+		return $url . $matches[1] . '&dl=1';
 	} else {
 		throw new Exception('No valid ChurchTools 3 download found in HTML!');
 	}

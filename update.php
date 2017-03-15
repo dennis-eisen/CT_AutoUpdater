@@ -29,13 +29,15 @@ register_shutdown_function(function () {
 });
 
 try {
-	$updateZip = __DIR__ . '/update.zip';
+    $updateArchive = __DIR__ . '/update.zip';
 	// Download zip file from Seafile server
-	for ($tries = 0; $tries < 3 && !file_exists($updateZip); $tries++) {
-		copy(getDownloadURL(), $updateZip);
+	for ($tries = 0; $tries < 3 && !file_exists($updateArchive); $tries++) {
+        list($downloadURL, $ext) = getDownloadURL();
+        $updateArchive = __DIR__ . '/update' . $ext;
+		copy($downloadURL, $updateArchive);
 	}
 	// Extract files
-	updateSystem($updateZip);
+	updateSystem($updateArchive);
 } catch(Exception $e) {
 	echo $e->getMessage() . "\n";
 	return;
@@ -44,14 +46,14 @@ try {
 // Build download link
 function getDownloadURL($url = 'https://seafile.churchtools.de/d/2ff6acb81e/') {
 	$html = file_get_contents(SEAFILE_URL);
-	if (preg_match('#href="' . SEAFILE_DIR . '(files/\?p=/churchtools-(3\..+?)\.zip)".*?<time[^<]+title="([^"]+?)"#s', $html, $matches)) {
+	if (preg_match('#href="' . SEAFILE_DIR . '(files/\?p=/churchtools-(3\..+?)(\.zip|\.tar\.gz))".*?<time[^<]+title="([^"]+?)"#s', $html, $matches)) {
 		// Parse SeaFile timestamp
-		$ts = DateTime::createFromFormat(DateTime::RFC2822, $matches[3])->getTimeStamp();
+		$ts = DateTime::createFromFormat(DateTime::RFC2822, $matches[4])->getTimeStamp();
 		// If SeaFile archive is older than modification date of constants.php, don't perform update
 		if (file_exists(__DIR__ . '/system/includes/constants.php') && filemtime(__DIR__ . '/system/includes/constants.php') > $ts) {
 			throw new Exception('ChurchTools is already up-to-date (' . $matches[2] . ')!');
 		}
-		return $url . $matches[1] . '&dl=1';
+		return array($url . $matches[1] . '&dl=1', $matches[3]);
 	} else {
 		throw new Exception('No valid ChurchTools 3 download found in HTML!');
 	}
@@ -67,26 +69,23 @@ function delTree($dir) {
 } 
 
 // Extract 'system' and 'index.php' or trigger error
-function updateSystem($zipPath) {
-	$zip = new ZipArchive;
-	$res = $zip->open($zipPath);
-	
-	if ($res === true) {
-		$zip->extractTo(__DIR__);
-		if (!(file_exists(__DIR__ . '/churchtools') && is_dir(__DIR__ . '/churchtools'))) {
-			trigger_error('The ZIP archive does not contain directory "churchtools", or creation failed!', E_USER_ERROR);
-			throw new Exception('The ZIP archive does not contain directory "churchtools", or creation failed!');
-		}
-		
-		// Check if directory system exists, if yes, delete it
-		if (file_exists(__DIR__ . '/system')) delTree(__DIR__ . '/system');
-		
-		rename(__DIR__ . '/churchtools/system', __DIR__ . '/system');
-		rename(__DIR__ . '/churchtools/index.php', __DIR__ . '/index.php');
-		delTree(__DIR__ . '/churchtools');
-		$zip->close();
-	}
-	if (file_exists($zipPath)) {
-		unlink($zipPath);
+function updateSystem($updateArchive) {
+	$zip = new PharData($updateArchive);
+    $zip->extractTo(__DIR__);
+    
+    if (!(file_exists(__DIR__ . '/churchtools') && is_dir(__DIR__ . '/churchtools'))) {
+        trigger_error('The ZIP archive does not contain directory "churchtools", or creation failed!', E_USER_ERROR);
+        throw new Exception('The ZIP archive does not contain directory "churchtools", or creation failed!');
+    }
+    
+    // Check if directory system exists, if yes, delete it
+    if (file_exists(__DIR__ . '/system')) delTree(__DIR__ . '/system');
+    
+    rename(__DIR__ . '/churchtools/system', __DIR__ . '/system');
+    rename(__DIR__ . '/churchtools/index.php', __DIR__ . '/index.php');
+    delTree(__DIR__ . '/churchtools');
+    
+	if (file_exists($updateArchive)) {
+		unlink($updateArchive);
 	}
 }

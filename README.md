@@ -14,6 +14,8 @@ Folgender **Funktionsumfang** ist in unserem Skript momentan enthalten:
 + Verifikation, ob ein Update verfügbar ist.
 + Herunterladen der ZIP-Datei vom ChurchTools SeaFile Server
 + Entpacken der ZIP-Datei und Ersetzung der index.php und des system-Verzeichnisses (Einspielen des Updates)
++ Lock, dieser verhindert, dass das Update mehrmals zur gleichen Zeit gestartet wird.
++ Push Benachrichtigung (über Pushover und / oder Pushbullet)
 
 Bei Fragen stehen wir gerne zur Verfügung! :)
 

@@ -49,7 +49,7 @@ try {
 		throw new Exception('Update already in progress!');
 	}
 
-    $updateArchive = __DIR__ . '/update.zip';
+    $updateArchive = __DIR__ . '/churchtools-LATEST.tar.gz';
 	// Download zip file from Seafile server
 	for ($tries = 0; $tries < 3 && !file_exists($updateArchive); $tries++) {
 		list($downloadURL, $ext) = getDownloadURL();
@@ -102,6 +102,47 @@ function delTree($dir) {
 	return rmdir($dir);
 }
 
+function makeBackup() {
+    // Root folder
+    $root = realpath(__DIR__);
+
+    // Initialize archive object
+    $zip = new ZipArchive();
+    $zip->open('backup_' . time() . '.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE);
+    
+    // Backup systems folder
+    if (file_exists(__DIR__ . '/system')) {
+        // Recursive directory iterator for "system"
+        /** @var SplFileInfo[] $files */
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root . '/system'),
+            RecursiveIteratorIterator::LEAVES_ONLY
+        );
+        
+        foreach ($files as $file)
+        {
+            // Skip directories (they would be added automatically)
+            if (!$file->isDir())
+            {
+                // Get real and relative path for current file
+                $filePath = $file->getRealPath();
+                $relativePath = substr($filePath, strlen($root) + 1);
+
+                // Add current file to archive
+                $zip->addFile($filePath, $relativePath);
+            }
+        }
+    }
+    
+    // Backup index.php
+    if (file_exists(__DIR__ . '/index.php')) {
+        $zip->addFile(__DIR__ . '/index.php', 'index.php');
+    }
+
+    // Close ZIP, create archive
+    $zip->close();
+}
+
 // Extract 'system' and 'index.php' or trigger error
 function updateSystem($updateArchive) {
 	$zip = new PharData($updateArchive);
@@ -122,8 +163,14 @@ function updateSystem($updateArchive) {
         throw new Exception('The ZIP archive does not contain directory "churchtools", or creation failed!');
     }
 
-    // Check if directory system exists, if yes, delete it
-    if (file_exists(__DIR__ . '/system')) delTree(__DIR__ . '/system');
+    // Check if directory system and index.php exist, if yes, rename them for backup
+    makeBackup();
+    if (file_exists(__DIR__ . '/system')) {
+        delTree(__DIR__ . '/system');
+    }
+    if (file_exists(__DIR__ . '/index.php')) {
+        unlink(__DIR__ . '/index.php');
+    }
 
     rename(__DIR__ . '/' . $dirName . '/system', __DIR__ . '/system');
     rename(__DIR__ . '/' . $dirName . '/index.php', __DIR__ . '/index.php');

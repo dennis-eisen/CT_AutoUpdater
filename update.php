@@ -17,7 +17,7 @@ define('HASH',          '...');
 // Modify to correct seafile server URL here
 define('SEAFILE_DIR',   'd/.../');
 // Should be fine, except if JMR decides to change the location of the SeaFile server... ;)
-define('SEAFILE_URL',   'https://seafile.churchtools.de/' . SEAFILE_DIR);
+define('SEAFILE_URL',   'https://seafile.church.tools/' . SEAFILE_DIR);
 
 echo '### ChurchTools - Auto Updater ###', "\n\n";
 

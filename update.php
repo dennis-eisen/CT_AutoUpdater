@@ -81,7 +81,7 @@ try {
 // Build download link
 function getDownloadURL($url = SEAFILE_URL) {
     $html = file_get_contents($url);
-    if (preg_match('#href="/d/2ff6acb81e/(files/\?p=/churchtools-(3\..+?)(\.zip|\.tar\.gz))"'
+    if (preg_match('#href="/' . SEAFILE_DIR . '(files/\?p=/churchtools-(3\..+?)(\.zip|\.tar\.gz))"'
         . '.*?<time[^<]+title="([^"]+?)"#s', $html, $matches)) {
         define('CT_VERSION', $matches[2]);
         // Parse SeaFile timestamp

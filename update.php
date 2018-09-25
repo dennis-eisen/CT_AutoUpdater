@@ -57,7 +57,7 @@ try {
     // Download zip file from Seafile server
     for ($tries = 0; $tries < 3 && !file_exists($updateArchive); $tries++) {
         list($downloadURL, $ext) = getDownloadURL();
-        $updateArchive = __DIR__ . '/update' . $ext;
+        $updateArchive = __DIR__ . '/update_' . date('Y-m-d_H:i:s') . $ext;
         copy($downloadURL, $updateArchive);
     }
     // Extract files

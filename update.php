@@ -119,7 +119,7 @@ function makeBackup() {
     $zip->open('backup_' . time() . '.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
     // Backup systems folder
-    if (file_exists(__DIR__ . '/system')) {
+    if (file_exists($root . '/system')) {
         // Recursive directory iterator for "system"
         /** @var SplFileInfo[] $files */
         $files = new RecursiveIteratorIterator(

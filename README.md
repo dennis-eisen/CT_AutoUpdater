@@ -30,15 +30,24 @@ Wenn ihr jetzt noch bei `define('SEAFILE_DIR', '/d/xyz1234567/');` den Pfad auf 
 (Ihr bekommt bei Updates per E-Mail einen Link zu einer SeaFile-Seite, die i.d.R. so aussieht: https://seafile.churchtools.de/d/xyz1234567/, kopiert davon einfach den hinteren Teil!) 
 
 ### Configuration mit separatem File
-Alternativ könnt ihr auch die Daten in eine extra Daten `update_config.php` im selben Verzeichnis packen, dann kann man ohne Probleme auch den Code des Updaters updaten:
+Alternativ könnt ihr auch die Daten in eine extra Daten `update_config.php` im selben Verzeichnis packen, dann kann man ohne Probleme auch den Code des Updaters updaten. `xyz1234567` müsst ihr jeweils mit dem Teil aus dem Link aus
+eurer Email ersetzen (Ihr bekommt bei Updates per E-Mail einen Link zu einer SeaFile-Seite, die i.d.R. so aussieht: https://seafile.churchtools.de/d/xyz1234567/, kopiert davon einfach den hinteren Teil zwischen den beiden `/`!) 
+
+
+**update_config.php:**
 ```php
 <?php
 // Put in your own password hash here
 define('HASH', 'PUT IN YOUR OWN HASH HERE');
-// Modify to correct seafile server URL here
-define('SEAFILE_DIR', '/d/xyz1234567/');
-// Should be fine, except if JMR decides to change the location of the SeaFile server... ;)
-define('SEAFILE_URL', 'https://seafile.churchtools.de/' . SEAFILE_DIR);
+// Modify to correct seafile server URL here - end with slash
+define('SEAFILE_DIR', 'd/xyz1234567/');
+// Should be fine, except if JMR decides to change the location of the SeaFile server... ;) - end with slash
+define('SEAFILE_HOST', 'https://seafile.churchtools.de/');
+// JsonPath to the file containing the file list
+define('SEAFILE_JSON_PATH', 'api/v2.1/share-links/xyz1234567/dirents');
+// switch Push on or off - without setting the push.inc was autodetected
+// define('ENABLE_PUSH', false);
+
 ```
 
 Nun das Update-Skript im Root-Verzeichnis der ChurchTools Installation (neben `index.php, system, files, etc.`) ablegen und per Cronejob einmal am Tag (z.B. bei uns 4:00 Uhr) so aufrufen:

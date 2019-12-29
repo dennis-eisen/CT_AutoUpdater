@@ -11,13 +11,23 @@ header('Content-Type: text/plain; charset=utf-8');
 if (file_exists('push.inc.php')) {
     require 'push.inc.php';
 }
+// optional, add your data in a separat file
+if (file_exists('update_config.php')) {
+    require 'update_config.php';
+}
 
 // Put in your own password hash here
-define('HASH',          '...');
+if (!defined('HASH')) {
+    define('HASH', '...');
+}
 // Modify to correct seafile server URL here
-define('SEAFILE_DIR',   'd/.../');
+if (!defined('SEAFILE_DIR')) {
+    define('SEAFILE_DIR', 'd/.../');
+}
 // Should be fine, except if JMR decides to change the location of the SeaFile server... ;)
-define('SEAFILE_URL',   'https://seafile.church.tools/' . SEAFILE_DIR);
+if (!defined('SEAFILE_URL')) {
+    define('SEAFILE_URL', 'https://seafile.church.tools/' . SEAFILE_DIR);
+}
 
 echo '### ChurchTools - Auto Updater ###', "\n\n";
 
@@ -33,8 +43,8 @@ register_shutdown_function(function () {
     }
 });
 
-$lockFile     = __DIR__ . '/ctupdate.lock';
-$ignoreLock   = false;
+$lockFile = __DIR__ . '/ctupdate.lock';
+$ignoreLock = false;
 $acquiredLock = false;
 try {
     // Check whether lock should be ignored because it's old (older than 10 minutes)
@@ -72,7 +82,7 @@ try {
             fclose($lock);
         }
         unlink($lockFile);
-    } else if (isset($lock)) {
+    } elseif (isset($lock)) {
         // Always close the file handle
         fclose($lock);
     }

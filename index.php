@@ -5,7 +5,7 @@ set_time_limit(0);
 /**
  * ChurchTools - Auto Updater
  * @copyright: Copyright (c) 2016, Dennis Eisen & Michael Lux
- * @version  : 29.05.2016
+ * @version  : 30.12.2019
  */
 header('Content-Type: text/plain; charset=utf-8');
 

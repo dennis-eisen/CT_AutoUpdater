@@ -20,38 +20,54 @@ Folgender **Funktionsumfang** ist in unserem Skript momentan enthalten:
 Bei Fragen stehen wir gerne zur Verfügung! :)
 
 ## Installation
+Hiermit wird ein `update` Verzeichnis in eurem Curchtools verzeichnis angelegt welches den Updater und die von euch zu erstellende Konfigurationsdatei enthält und ganz einfach geupdated werden kann.
+```bash
+cd CHURCHTOOLS_DIR
+git clone https://github.com/karl007/CT_AutoUpdater.git ./update
+```
 
-Vor dem erstmaligen Aufrufen der `update.php` müsst Ihr einen Hash für euer gewähltes Passwort erstellen.
-Dafür zuerst durch den Aufruf von <https://churchtools_domain.xyz/createHash.php?EUER_PASSWORT> einen Passwort-Hash erzeugen!
+## Update
+```bash
+cd CHURCHTOOLS_DIR/update
+git stash -u # ggf lokal gemachte änderungen werden als stash vorm überschreiben gespeichert
+git pull -v # holt die letzte Version vom Server
+git reset --hard # ersetzt alle lokalen files mit denen vom Server - die config.php ist hier nicht betroffen
+```
 
-### Configuration im File
-Danach müsst ihr den dort erstellten Hash in der `update.php` bei `define('HASH', 'PUT IN YOUR OWN HASH HERE');` eintragen.
-Wenn ihr jetzt noch bei `define('SEAFILE_DIR', '/d/xyz1234567/');` den Pfad auf die Stelle anpasst, bei der ihr die ChruchTools-Updates herunter ladet, ist das Skript einsatzbereit!
-(Ihr bekommt bei Updates per E-Mail einen Link zu einer SeaFile-Seite, die i.d.R. so aussieht: https://seafile.churchtools.de/d/xyz1234567/, kopiert davon einfach den hinteren Teil!) 
+## Configuration
+Vor dem ersten Update müsst Ihr einen Hash für euer gewähltes Passwort erstellen.
+Dafür zuerst durch den Aufruf von <https://churchtools_domain.xyz/update/?EUER_PASSWORT> einen Passwort-Hash erzeugen!
 
-### Configuration mit separatem File
-Alternativ könnt ihr auch die Daten in eine extra Daten `update_config.php` im selben Verzeichnis packen, dann kann man ohne Probleme auch den Code des Updaters updaten. `xyz1234567` müsst ihr jeweils mit dem Teil aus dem Link aus
-eurer Email ersetzen (Ihr bekommt bei Updates per E-Mail einen Link zu einer SeaFile-Seite, die i.d.R. so aussieht: https://seafile.churchtools.de/d/xyz1234567/, kopiert davon einfach den hinteren Teil zwischen den beiden `/`!) 
+Den Inhalt der bei diesem Aufruf angezeigt wird als `update/config.php` speichern und noch bei `define('SEAFILE_DIR', 'd/xyz1234567/');` und `define('SEAFILE_JSON_PATH', 'api/v2.1/share-links/xyz1234567/dirents');` den  Teil `xyz1234567` anpasst, bei der ihr die ChruchTools-Updates herunter ladet, ist das Skript einsatzbereit!
+(Ihr bekommt bei Updates per E-Mail einen Link zu einer SeaFile-Seite, die i.d.R. so aussieht: https://seafile.churchtools.de/d/xyz1234567/, verwendet davon einfach den hinteren Teil!)
 
+### Push
+Defaultmäßig ist Push deaktiviert, kann aber über die defines am beginn der `push.inc.php` eingerichtet und über das `define('ENABLE_PUSH', false);` aktiviert werden.
 
-**update_config.php:**
+**config.php:** (aktivierte Einträge sind Pflicht und müssen passen, die auskommentierten optional)
 ```php
 <?php
 // Put in your own password hash here
 define('HASH', 'PUT IN YOUR OWN HASH HERE');
 // Modify to correct seafile server URL here - end with slash
 define('SEAFILE_DIR', 'd/xyz1234567/');
-// Should be fine, except if JMR decides to change the location of the SeaFile server... ;) - end with slash
-define('SEAFILE_HOST', 'https://seafile.churchtools.de/');
 // JsonPath to the file containing the file list
 define('SEAFILE_JSON_PATH', 'api/v2.1/share-links/xyz1234567/dirents');
+// Should be fine, except if JMR decides to change the location of the SeaFile server... ;) - end with slash
+// define('SEAFILE_HOST', 'https://seafile.churchtools.de/');
 // switch Push on or off - without setting the push.inc was autodetected
 // define('ENABLE_PUSH', false);
+// the root directory of Churchtools - default is the parent of this
+// define('CT_ROOT_DIR', __DIR__.'/..');
+// Destination for the backup archives
+// define('BACKUP_DIR', __DIR__.'/../_BACKUP');
+// show more infos
+// define('DEBUG', false);
 
 ```
 
-Nun das Update-Skript im Root-Verzeichnis der ChurchTools Installation (neben `index.php, system, files, etc.`) ablegen und per Cronejob einmal am Tag (z.B. bei uns 4:00 Uhr) so aufrufen:
-<https://churchtools_domain.xyz/update.php?EUER_PASSWORT>
+Nun könnt ihr das script Cronejob einmal am Tag (z.B. bei uns 4:00 Uhr) oder bei bedarf manuell so aufrufen:
+<https://churchtools_domain.xyz/update/?EUER_PASSWORT>
 
 Die meisten Hosting-Provider bieten Cronjobs für ihre Kunden an.
 Wenn ihr keine Cronjobs anlegen könnt, könnt ihr auch einen kostenlosen externen Dienst wie https://www.cron-job.org/ dafür verwenden.

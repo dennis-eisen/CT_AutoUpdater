@@ -7,17 +7,31 @@
 
 header('Content-Type: text/plain; charset=utf-8');
 
+// optional, add your data in a separat file
+if (file_exists('update_config.php')) {
+    require 'update_config.php';
+}
 // Pushover and Pushbullet integration
-if (file_exists('push.inc.php')) {
+if ((!defined('ENABLE_PUSH') || ENABLE_PUSH) && file_exists('push.inc.php')) {
     require 'push.inc.php';
 }
 
 // Put in your own password hash here
-define('HASH',          '...');
+if (!defined('HASH')) {
+    define('HASH', '...');
+}
 // Modify to correct seafile server URL here
-define('SEAFILE_DIR',   'd/.../');
+if (!defined('SEAFILE_DIR')) {
+    define('SEAFILE_DIR', 'd/.../');
+}
+// Modify to correct seafile server URL here
+if (!defined('SEAFILE_JSON_PATH')) {
+    define('SEAFILE_JSON_PATH', 'api/v2.1/share-links/.../dirents');
+}
 // Should be fine, except if JMR decides to change the location of the SeaFile server... ;)
-define('SEAFILE_URL',   'https://seafile.church.tools/' . SEAFILE_DIR);
+if (!defined('SEAFILE_HOST')) {
+    define('SEAFILE_HOST', 'https://seafile.church.tools/');
+}
 
 echo '### ChurchTools - Auto Updater ###', "\n\n";
 
@@ -33,8 +47,8 @@ register_shutdown_function(function () {
     }
 });
 
-$lockFile     = __DIR__ . '/ctupdate.lock';
-$ignoreLock   = false;
+$lockFile = __DIR__ . '/ctupdate.lock';
+$ignoreLock = false;
 $acquiredLock = false;
 try {
     // Check whether lock should be ignored because it's old (older than 10 minutes)
@@ -72,33 +86,50 @@ try {
             fclose($lock);
         }
         unlink($lockFile);
-    } else if (isset($lock)) {
+    } elseif (isset($lock)) {
         // Always close the file handle
         fclose($lock);
     }
 }
 
 // Build download link
-function getDownloadURL($url = SEAFILE_URL) {
-    $html = file_get_contents($url);
-    if (preg_match('#href="/' . SEAFILE_DIR . '(files/\?p=/churchtools-(3\..+?)(\.zip|\.tar\.gz))"'
-        . '.*?<time[^<]+title="([^"]+?)"#s', $html, $matches)) {
-        define('CT_VERSION', $matches[2]);
-        // Parse SeaFile timestamp
-        $ts = DateTime::createFromFormat(DateTime::RFC2822, $matches[4])->getTimeStamp();
-        // If SeaFile archive is older than modification date of constants.php, don't perform update
-        if (file_exists(__DIR__ . '/system/includes/constants.php') &&
-            filemtime(__DIR__ . '/system/includes/constants.php') > $ts) {
-            throw new Exception('ChurchTools is already up-to-date (' . $matches[2] . ')!');
-        }
-        return array($url . $matches[1] . '&dl=1', $matches[3]);
-    } else {
+function getDownloadURL() {
+    $json = json_decode(file_get_contents(SEAFILE_HOST . SEAFILE_JSON_PATH), true);
+    if (!$json || !isset($json['dirent_list'])) {
         if (function_exists('push')) {
-            push('[Fehler] Download', "Kein gültiger ChurchTools 3 Download im HTML gefunden!"
+            push('[Fehler] Download', "Kein gültiger ChurchTools 3 Download im JSON gefunden!"
                 . " <span style=\"color:red\">$url</span>", 1);
         }
-        throw new Exception('No valid ChurchTools 3 download found in HTML!');
+        throw new Exception('No valid ChurchTools 3 download found in JSON!');
     }
+    // find curchtools file in filelist
+    $matches = [];
+    foreach ($json['dirent_list'] as $item) {
+        if ($item['is_dir'] == true || !preg_match('/churchtools-(3\..+?)(\.zip|\.tar\.gz)/', $item['file_name'], $matches))
+            continue;
+        $version = $matches[1];
+        $ext = $matches[2];
+        $file = $item['file_path'];
+        break; // don't look furhter, take first matched file
+    }
+
+    // dont't find a matching file?
+    if (!$version) {
+        if (function_exists('push')) {
+            push('[Fehler] Download', "Kein gültiger ChurchTools 3 Download im FileList gefunden!"
+                . " <span style=\"color:red\">$url</span>", 1);
+        }
+        throw new Exception('No valid ChurchTools 3 download found in FileList!');
+    }
+
+    // Parse SeaFile timestamp
+    $ts = DateTime::createFromFormat(DateTime::ATOM, $item['last_modified'])->getTimeStamp();
+    // If SeaFile archive is older than modification date of constants.php, don't perform update
+    if (file_exists(__DIR__ . '/system/includes/constants.php') &&
+        filemtime(__DIR__ . '/system/includes/constants.php') > $ts) {
+        throw new Exception('ChurchTools is already up-to-date (' . $version . ')!');
+    }
+    return [SEAFILE_HOST . SEAFILE_DIR . 'files/?p=' . $file . '&dl=1', $ext];
 }
 
 // Recursive deleting of directorys

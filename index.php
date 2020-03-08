@@ -138,7 +138,8 @@ function getDownloadURL() {
     $file = null;
     $matches = [];
     foreach ($json->dirent_list as $item) {
-        if (!preg_match('/churchtools-(3\..+?)(\.zip|\.tar\.gz)/', $item->file_name, $matches)) {
+        if (!isset($item->file_name) ||
+                !preg_match('/churchtools-(3\..+?)(\.zip|\.tar\.gz)/', $item->file_name, $matches)) {
             continue;
         }
         list(, $version, $ext) = $matches;

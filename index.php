@@ -1,10 +1,13 @@
 <?php
 /**
- * ChurchTools - Auto Updater
- * @copyright: Copyright (c) 2020, Dennis Eisen & Michael Lux
- * @version  : 2020-03-07
+ * ChurchTools - Auto Updater 4.0
+ * @copyright: Copyright (c) 2022, Michael Lux & Dennis Eisen
+ * @version  : 2022-08-29
  */
 
+// Enable error output
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 // Disable PHP time limit
 set_time_limit(0);
 // Increase PHP memory limit
@@ -12,42 +15,45 @@ ini_set('memory_limit', '1G');
 
 header('Content-Type: text/plain; charset=utf-8');
 
-// optional, add your data in a separat file
+// Optional, add your data in a separat file
 if (file_exists('config.php')) {
     require 'config.php';
 }
-// not configured - show config.php content with Hash
+// Not configured - show config.php content with Hash
 if (!defined('HASH')) {
     if (!empty($_SERVER['QUERY_STRING'])) {
         $hash = password_hash($_SERVER['QUERY_STRING'], PASSWORD_BCRYPT, array('cost' => 12));
         echo <<<EOF
 <?php
 // Put in your own password hash here
-define('HASH', '$hash');
+const HASH = '$hash';
 // Modify to correct SeaFile code here!
-define('SEAFILE_CODE', 'xyz1234567');
+const SEAFILE_CODE = 'xyz1234567';
 
 // Should be fine, except if JMR decides to change the location of the SeaFile server... ;) - end with slash
-define('SEAFILE_HOST', 'https://seafile.church.tools/');
-// Switch message pushing via Pushover/PushBullet on/off
-define('ENABLE_PUSH', false);
-// the root directory of Churchtools - default is the parent of this
-define('CT_ROOT_DIR', __DIR__ . '/..');
+const SEAFILE_HOST = 'https://seafile.church.tools/';
+// Switch message pushing via Pushover on/off
+const ENABLE_PUSH = false;
+// The root directory of Churchtools - default is the parent of this file's directory
+const CT_ROOT_DIR = __DIR__ . '/..';
 // Destination for the backup archives
-define('BACKUP_DIR', __DIR__ . '/../_BACKUP');
-// show more infos
-define('DEBUG', false);
+const BACKUP_DIR = __DIR__ . '/../_BACKUP';
+// Show debug information
+const DEBUG = false;
+// Use CLI for extraction
+const NATIVE_EXTRACT = false;
 EOF;
     } else {
         echo "ChurchTools AutoUpdater is not configured\n";
         echo "*****************************************\n";
-        echo "To configure the auto updater, call this script /update/index.php?YOUR_OWN_SECRET_PASSORD and "
-                . "save the given data as config.php in your update directory to generate a secret hash and save it.";
+        echo "To configure the auto updater, call this script /update/index.php?YOUR_OWN_SECRET_PASSWORD "
+            . "to generate a secret hash and save the output with your desired configuration "
+            . "as config.php in your update directory.";
     }
     exit();
 }
 
-// Pushover and Pushbullet integration
+// Pushover integration
 if (defined('ENABLE_PUSH') && ENABLE_PUSH && file_exists('push.inc.php')) {
     require 'push.inc.php';
 }
@@ -66,13 +72,6 @@ if (!password_verify($_SERVER['QUERY_STRING'], HASH)) {
     exit('Try harder! ;)');
 }
 
-// Keyword for cronejob e-mail notification. No e-mail will be sent if detected!
-register_shutdown_function(function () {
-    if (error_get_last() === null) {
-        echo ' |--> UpdateSuccessful';
-    }
-});
-
 $lockFile = __DIR__ . '/ctupdate.lock';
 $ignoreLock = false;
 $acquiredLock = false;
@@ -89,19 +88,67 @@ try {
         throw new Exception('Update already in progress!');
     }
 
-    // Update is directly installed from local developer build
-    $updateArchive = __DIR__ . '/churchtools-LATEST.tar.gz';
-    $version = 'Developer-Build';
-    // If no local dev build found, download ZIP file from SeaFile server
-    for ($tries = 0; $tries < 3 && !file_exists($updateArchive); $tries++) {
-        list($downloadURL, $version, $ext) = getDownloadURL();
-        $updateArchive = __DIR__ . '/update' . $ext;
-        copy($downloadURL, $updateArchive);
+    // Normalized ChurchTools root directory
+    $ctRoot = realpath(CT_ROOT_DIR);
+    // Temporary directory for extraction
+    $tmpDir = __DIR__ . '/tmp';
+    try {
+        // Update is directly installed from local developer build archive, if existing
+        $updateArchive = __DIR__ . '/churchtools-LATEST.tar.gz';
+        $version = 'Developer-Build';
+        // If no local dev build archive found, download archive from SeaFile server
+        for ($tries = 0; $tries < 3 && !file_exists($updateArchive); $tries++) {
+            list($downloadURL, $version, $ext) = getDownloadURL($ctRoot);
+            $updateArchive = __DIR__ . '/update' . $ext;
+            copy($downloadURL, $updateArchive);
+        }
+
+        // Extract files
+        $updateDir = extractArchive($updateArchive, $tmpDir);
+
+        // Create a backup of system folder and index.php
+        makeBackup($ctRoot);
+
+        debugLog("Delete old files and dirs...");
+        if (file_exists($ctRoot . '/system')) {
+            delTree($ctRoot . '/system');
+        }
+        if (file_exists($ctRoot . '/index.php')) {
+            unlink($ctRoot . '/index.php');
+        }
+
+        debugLog('Move new files/dirs to ' . $ctRoot . '...');
+        rename($updateDir . '/system', $ctRoot . '/system');
+        rename($updateDir . '/index.php', $ctRoot . '/index.php');
+        // Set mtime of constants.php to avoid endless updating
+        touch($ctRoot . '/system/includes/constants.php');
+    } finally {
+        if (is_dir($tmpDir)) {
+            debugLog("Remove temporary extraction archive...");
+            delTree($tmpDir);
+        }
+        if (file_exists($updateArchive)) {
+            debugLog("Remove updateArchive...");
+            unlink($updateArchive);
+        }
     }
-    // Extract files
-    updateSystem($updateArchive, $version);
+
+    if (error_get_last() === null) {
+        if (function_exists('push')) {
+            push('Update successful', 'Update to version <b>' . $version . '</b> has been successfully applied!');
+        }
+        echo ' |--> UpdateSuccessful';
+    } else {
+        if (function_exists('push')) {
+            push('Update with error(s)', 'Update completed with one or more error(s). Last error message: '
+                . error_get_last()['message']);
+        }
+    }
 } catch (Exception $e) {
     echo $e->getMessage(), "\n";
+    if (function_exists('push')) {
+        push('Update failed', 'Update aborted due to the following exception: ' . $e->getMessage());
+    }
 } finally {
     if ($acquiredLock || $ignoreLock) {
         // Unlock script if lock was actually acquired or ignored
@@ -121,15 +168,11 @@ try {
  * @return array
  * @throws Exception If something went wrong with the download
  */
-function getDownloadURL() {
+function getDownloadURL(string $ctRoot = CT_ROOT_DIR): array {
     $jsonUrl = SEAFILE_HOST . 'api/v2.1/share-links/' . SEAFILE_CODE . '/dirents';
     $json = json_decode(file_get_contents($jsonUrl));
     if ($json === null || !isset($json->dirent_list)) {
-        if (function_exists('push')) {
-            push('[Fehler] Download', "Kein gültiger ChurchTools 3 Download im JSON gefunden!"
-                    . " <span style=\"color:red\">$jsonUrl</span>", 1);
-        }
-        throw new Exception('No valid ChurchTools 3 download found in JSON!');
+        throw new Exception('No valid contents list found in JSON from ' . $jsonUrl . '!');
     }
     // Find ChurchTools archive
     $item = null;
@@ -147,29 +190,25 @@ function getDownloadURL() {
         break;
     }
 
-    // dont't find a matching file?
+    // Didn't find a matching file?
     if (!isset($version)) {
-        if (function_exists('push')) {
-            push('[Fehler] Download', "Kein gültiger ChurchTools 3 Download in der Dateiliste gefunden!"
-                    . " <span style=\"color:red\">$jsonUrl</span>", 1);
-        }
-        throw new Exception('No valid ChurchTools 3 download found in FileList!');
+        throw new Exception('No valid ChurchTools 3 download found in FileList from ' . $jsonUrl . '!');
     }
 
     $downloadUrl = SEAFILE_HOST . 'd/' . SEAFILE_CODE . '/files/?p=' . $file . '&dl=1';
     debugLog("Checking whether $version from $downloadUrl is newer than installed version...");
     // Parse SeaFile timestamp
-    $timeStamp = DateTime::createFromFormat(DateTime::ATOM, $item->last_modified)->getTimeStamp();
+    $timeStamp = DateTime::createFromFormat(DateTimeInterface::ATOM, $item->last_modified)->getTimeStamp();
     // If SeaFile archive is older than modification date of constants.php, don't perform update
-    if (file_exists(CT_ROOT_DIR . '/system/includes/constants.php') &&
-            filemtime(CT_ROOT_DIR . '/system/includes/constants.php') > $timeStamp) {
+    if (file_exists($ctRoot . '/system/includes/constants.php') &&
+            filemtime($ctRoot . '/system/includes/constants.php') > $timeStamp) {
         throw new Exception('ChurchTools is already up-to-date (' . $version . ')!');
     }
     return [$downloadUrl, $version, $ext];
 }
 
 // Recursive deleting of directorys
-function delTree($dir) {
+function delTree($dir): bool {
     $files = array_diff(scandir($dir), ['.', '..']);
     foreach ($files as $file) {
         is_dir("$dir/$file") ? delTree("$dir/$file") : unlink("$dir/$file");
@@ -177,19 +216,18 @@ function delTree($dir) {
     return rmdir($dir);
 }
 
-function makeBackup($dir = CT_ROOT_DIR, $dest_dir = BACKUP_DIR) {
-    debugLog("Backup $dir to $dest_dir...");
+function makeBackup($dir = CT_ROOT_DIR, $dest_dir = BACKUP_DIR): void {
     // Root folder
     $root = realpath($dir);
     if (!is_dir($dest_dir)) {
-        mkdir($dest_dir);
+        mkdir($dest_dir, 0755, true);
     }
 
     // Initialize archive object
     $zip = new ZipArchive();
     $backup_file = $dest_dir . '/backup_' . time() . '.zip';
     $zip->open($backup_file, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-    debugLog("Save backup to $backup_file...");
+    debugLog("Backup $dir to $backup_file...");
 
     // Backup systems folder
     if (file_exists($root . '/system')) {
@@ -206,7 +244,6 @@ function makeBackup($dir = CT_ROOT_DIR, $dest_dir = BACKUP_DIR) {
                 // Get real and relative path for current file
                 $filePath = $file->getRealPath();
                 $relativePath = substr($filePath, strlen($root) + 1);
-
                 // Add current file to archive
                 $zip->addFile($filePath, $relativePath);
             }
@@ -223,64 +260,65 @@ function makeBackup($dir = CT_ROOT_DIR, $dest_dir = BACKUP_DIR) {
 }
 
 /**
- * Extract 'system' and 'index.php'
- * @param string $updateArchive Path to archive to unpack
- * @param string $version ChurchTools version from filename
- * @param string $targetDir Target directory for extraction
- * @throws Exception If the extraction process encountered an error
+ * @throws Exception If extraction of update failed
  */
-function updateSystem($updateArchive, $version, $targetDir = CT_ROOT_DIR) {
+function extractArchive(string $updateArchive, string $targetDir): string {
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0755, true);
+    }
     debugLog("Extract $updateArchive to $targetDir...");
-    $zip = new PharData($updateArchive);
-    $zip->extractTo($targetDir);
+    if (defined('NATIVE_EXTRACT') && NATIVE_EXTRACT) {
+        $archivePath = realpath($updateArchive);
+        $targetPath = realpath($targetDir);
+        $ret = -1;
+        if (str_ends_with($updateArchive, '.zip')) {
+            system('unzip ' . escapeshellarg($archivePath) . ' -d ' . escapeshellarg($targetPath), $ret);
+        } else {
+            system('tar -xf ' . escapeshellarg($archivePath) . ' -C ' . escapeshellarg($targetPath), $ret);
+        }
+        if ($ret !== 0) {
+            throw new Exception('Native extraction failed with error code ' . $ret . '!');
+        }
+    } else {
+        if (str_ends_with($updateArchive, '.zip')) {
+            $zip = new ZipArchive();
+            $zip->open($updateArchive);
+            $zip->extractTo($targetDir);
+        } else {
+            $tar = new PharData($updateArchive);
+            $tar->extractTo($targetDir);
+            $files = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($targetDir),
+                RecursiveIteratorIterator::LEAVES_ONLY
+            );
+            /** @var SplFileInfo $file */
+            foreach ($files as $file) {
+                $filename = $file->getFilename();
+                $filenameLength = strlen($filename);
+                if ($filenameLength >= 99 && $filenameLength <= 100 && !str_contains($filename, '.')) {
+                    throw new Exception('Detected filename with length >= 99 and without file extension.'
+                        . ' This indicates an improperly extracted TAR archive. Exit update!');
+                }
+            }
+        }
+    }
+
     $needle = 'churchtools';
-    $dirName = null;
-    foreach (scandir('phar:///' . $updateArchive) as $entry) {
-        if (substr($entry, 0, strlen($needle)) === $needle) {
-            $dirName = $entry;
+    foreach (scandir($targetDir) as $entry) {
+        if (str_starts_with($entry, $needle)) {
+            $updateDir = $targetDir . '/' . $entry;
+            break;
         }
     }
-    debugLog("... from directory $dirName in archive file");
-
-    if (!(file_exists($targetDir . '/' . $dirName) && is_dir($targetDir . '/' . $dirName))) {
-        trigger_error('The ZIP archive does not contain directory "churchtools", or creation failed!',
-                E_USER_ERROR);
-        if (function_exists('push')) {
-            push('[Fehler] ZIP', 'Das Verzeichnis "churchtools" fehlt im ZIP Archiv!', 1);
-        }
-        // cleanup
-        if (is_dir($targetDir . '/' . $dirName)) {
-            delTree($targetDir . '/' . $dirName);
-        }
-        throw new Exception('The ZIP archive does not contain directory "churchtools", or creation failed!');
+    if (!(isset($updateDir) && file_exists($updateDir) && is_dir($updateDir))) {
+        throw new Exception('Archive does not contain a directory starting with "churchtools", or creation failed!');
     }
+    debugLog("Found extracted update directory $updateDir");
 
-    // Check if directory system and index.php exist, if yes, rename them for backup
-    makeBackup();
-    debugLog("Delete old files and dirs...");
-    if (file_exists($targetDir . '/system')) {
-        delTree($targetDir . '/system');
-    }
-    if (file_exists($targetDir . '/index.php')) {
-        unlink($targetDir . '/index.php');
-    }
-
-    debugLog("Move new files/dirs to $targetDir...");
-    rename($targetDir . '/' . $dirName . '/system', $targetDir . '/system');
-    rename($targetDir . '/' . $dirName . '/index.php', $targetDir . '/index.php');
-    delTree($targetDir . '/' . $dirName);
-
-    if (function_exists('push')) {
-        push('Update erfolgreich', 'Ein Update wurde erfolgreich installiert: <b>' . $version . '</b>!');
-    }
-
-    debugLog("Remove updateArchive...");
-    if (file_exists($updateArchive)) {
-        unlink($updateArchive);
-    }
+    return $updateDir;
 }
 
-function debugLog($msg) {
+function debugLog($msg): void {
     if (DEBUG) {
         echo "$msg\n";
     }

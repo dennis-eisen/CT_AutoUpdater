@@ -51,7 +51,7 @@ git stash pop # ggf. durchgeführte lokale Änderungen wieder zurück holen
 
 ## Configuration
 Vor dem ersten Update müsst Ihr eure Konfiguration initialisieren und ein Passwort wählen.
-Dafür zuerst durch den Aufruf von <https://churchtools_domain.xyz/update/?EUER_PASSWORT> einen Passwort-Hash erzeugen!
+Dafür zuerst durch den Aufruf von <https://churchtools_domain.xyz/update/index.php?EUER_PASSWORT> einen Passwort-Hash erzeugen!
 
 Den Inhalt der bei diesem Aufruf angezeigt wird als `update/config.php` speichern und noch bei
 `const SEAFILE_CODE = 'xyz1234567';` das `xyz1234567` ersetzen, dann ist das Skript einsatzbereit!
@@ -85,7 +85,7 @@ const NATIVE_EXTRACT = false;
 ```
 
 Nun könnt ihr das script per Cronjob einmal am Tag (z.B. bei uns 4:00 Uhr) oder bei Bedarf manuell so aufrufen:
-<https://churchtools_domain.xyz/update/?EUER_PASSWORT>
+<https://churchtools_domain.xyz/update/index.php?EUER_PASSWORT>
 
 Die meisten Hosting-Provider bieten Cronjobs für ihre Kunden an.
 Wenn ihr keine Cronjobs anlegen könnt, könnt ihr auch einen kostenlosen externen Dienst wie https://www.cron-job.org/
